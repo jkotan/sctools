@@ -18,27 +18,47 @@
 #
 
 """ Command-line tool for dumping creating scicat json config """
-    
+
 import sys
-import os
+# import os
 import simplejson as json
 import argparse
-import argcomplete
+# import argcomplete
+import pprint
 
 
 {
  "creationLocation": "/PSI/SLS/TOMCAT",
  "sourceFolder": "/scratch/devops",
  "type": "raw",
- "ownerGroup":"p16623"
+ "ownerGroup": "p16623"
 }
+
+
+def mdflatten(dct, keys, res):
+    if isinstance(dct, dict):
+        for ky, vl in dct.items():
+            kys = list(keys)
+            if isinstance(ky, str):
+                kys.append(ky)
+                mdflatten(vl, kys, res)
+            else:
+                key = ".".join(keys)
+                # print("2.", key)
+                res[key] = dct
+                break
+
+    else:
+        key = ".".join(keys)
+        # print("1.", key)
+        res[key] = dct
 
 
 class Loader(object):
 
     btmdmap = {
         "principalInvestigator": "pi.email",
-        "pid": "beamtimeId",
+        "pid": "beamtimeId",   # ?? is not unique for dataset
         "owner": "applicant.lastname",
         "contactEmail": "contact",
         "sourceFolder": "corePath",
@@ -55,29 +75,29 @@ class Loader(object):
         "creationLocation": "/DESY/{facility}/{beamline}",
         "type": "raw",
     }
-    
+
     cre = {
-        "creationTime": [], # ?? endTime for dataset !!!
-        "ownerGroup": [], # ??? !!!
-        
-        "sampleId": [], # ???
+        "creationTime": [],  # ?? endTime for dataset !!!
+        "ownerGroup": [],  # ??? !!!
+
+        "sampleId": [],  # ???
         "publisheddateId": [],
-        "accessGroups": [], # ???
-        "createdBy": [], # ???
-        "updatedBy": [], # ???
-        "createdAt": [], # ???
-        "updatedAt": [], # ???
+        "accessGroups": [],  # ???
+        "createdBy": [],  # ???
+        "updatedBy": [],  # ???
+        "createdAt": [],  # ???
+        "updatedAt": [],  # ???
         "isPublished": ["false"],
         "dataFormat": [],
         "scientificMetadata": {},
         "orcidOfOwner": "ORCID of owner https://orcid.org if available",
         "sourceFolderHost": [],
-        "size" : [],
+        "size": [],
         "packedSize": [],
         "numberOfFiles": [],
         "numberOfFilesArchived": [],
         "validationStatus": [],
-        "keywords" : [],
+        "keywords": [],
         "datasetName": [],
         "classification": [],
         "license": [],
@@ -86,7 +106,7 @@ class Loader(object):
         "instrumentId": [],
         "history": [],
         "datasetlifecycle": [],
-        
+
     }
 
     dr = {
@@ -99,14 +119,14 @@ class Loader(object):
         "proposalType": [],
         "users": [],
     }
-    
-    
+
     def __init__(self, options):
         """ loader constructor
 
         :param options: parser options
         :type options: :class:`argparse.Namespace`
         """
+        self.__output = options.output
         dct = {}
         if options.beamtimemeta:
             with open(options.beamtimemeta, "r") as fl:
@@ -114,7 +134,19 @@ class Loader(object):
                 # # print(jstr)
                 dct = json.load(fl)
         self.__btmeta = dct
-        self.__output = options.output
+        dct = {}
+        if options.scientificmeta:
+            with open(options.scientificmeta, "r") as fl:
+                jstr = fl.read()
+                print(jstr)
+                try:
+                    dct = json.loads(jstr)
+                except Exception:
+                    if jstr:
+                        nan = float('nan')    # noqa: F841
+                        dct = eval(jstr)
+                        # mdflatten(dstr, [], dct)
+        self.__scmeta = dct
         # print("BEAMTIME:", self.__btmeta)
         # print("OUTPUT:", self.__output)
         self.__metadata = {}
@@ -127,7 +159,7 @@ class Loader(object):
         :returns: output information
         :rtype: :obj:`str`
         """
-        
+
         if self.__btmeta:
             for sc, ds in self.btmdmap.items():
                 sds = ds.split(".")
@@ -142,24 +174,27 @@ class Loader(object):
                     self.__metadata[sc] = md
             for sc, vl in self.strcre.items():
                 self.__metadata[sc] = vl.format(**self.__btmeta)
-            print(self.__metadata)
-            if self.__output:
-                with open(self.__output, "w") as fl:
-                    # jstr = fl.read()
-                    # # print(jstr)
-                    json.dump(self.__metadata, fl, indent = 4)
+        if self.__scmeta:
+            self.__metadata["scientificMetadata"] = self.__scmeta
+        pp = pprint.PrettyPrinter()
+        pp.pprint(self.__metadata)
+        # print(self.__metadata)
+        if self.__output:
+            with open(self.__output, "w") as fl:
+                # jstr = fl.read()
+                # # print(jstr)
+                json.dump(self.__metadata, fl, indent=4)
 
 
-                
 def main():
     """ the main program function
     """
 
     #: pipe arguments
-    pipe = []
-    if not sys.stdin.isatty():
-        #: system pipe
-        pipe = sys.stdin.readlines()
+    # pipe = []
+    # if not sys.stdin.isatty():
+    #     #: system pipe
+    #     pipe = sys.stdin.readlines()
 
     description = "Command-line tool for creating SciCat"
 
@@ -172,6 +207,8 @@ def main():
         description=description, epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-b", "--beamtime-meta", dest="beamtimemeta",
+                        help=("beamtime metadata file"))
+    parser.add_argument("-s", "--scientific-meta", dest="scientificmeta",
                         help=("beamtime metadata file"))
     parser.add_argument("-o", "--output", dest="output",
                         help=("output scicat metadata file"))
@@ -199,4 +236,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
