@@ -25,7 +25,7 @@ import simplejson as json
 import argparse
 # import argcomplete
 import pprint
-
+import uuid
 
 {
  "creationLocation": "/PSI/SLS/TOMCAT",
@@ -58,7 +58,7 @@ class Loader(object):
 
     btmdmap = {
         "principalInvestigator": "pi.email",
-        "pid": "beamtimeId",   # ?? is not unique for dataset
+        # "pid": "beamtimeId",   # ?? is not unique for dataset
         "owner": "applicant.lastname",
         "contactEmail": "contact",
         "sourceFolder": "corePath",
@@ -174,8 +174,14 @@ class Loader(object):
                     self.__metadata[sc] = md
             for sc, vl in self.strcre.items():
                 self.__metadata[sc] = vl.format(**self.__btmeta)
+        self.__metadata["scientificMetadata"] = {}
         if self.__scmeta:
-            self.__metadata["scientificMetadata"] = self.__scmeta
+            self.__metadata["scientificMetadata"].update(self.__scmeta)
+        if self.__btmeta:
+            self.__metadata["scientificMetadata"]["beamtimeId"] = \
+                self.__btmeta["beamtimeId"]
+        if "pid" not in self.__metadata.keys():
+            self.__metadata["pid"] = str(uuid.uuid4())
         pp = pprint.PrettyPrinter()
         pp.pprint(self.__metadata)
         # print(self.__metadata)
