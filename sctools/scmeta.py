@@ -180,7 +180,9 @@ class Loader(object):
         if self.__btmeta:
             self.__metadata["scientificMetadata"]["beamtimeId"] = \
                 self.__btmeta["beamtimeId"]
-        if "pid" not in self.__metadata.keys():
+        if options.pid:
+            self.__metadata["pid"] = options.pid
+        elif "pid" not in self.__metadata.keys():
             self.__metadata["pid"] = str(uuid.uuid4())
         pp = pprint.PrettyPrinter()
         pp.pprint(self.__metadata)
@@ -216,6 +218,8 @@ def main():
                         help=("beamtime metadata file"))
     parser.add_argument("-s", "--scientific-meta", dest="scientificmeta",
                         help=("beamtime metadata file"))
+    parser.add_argument("-p", "--pid", dest="pid",
+                        help=("dataset pid"))
     parser.add_argument("-o", "--output", dest="output",
                         help=("output scicat metadata file"))
     try:
