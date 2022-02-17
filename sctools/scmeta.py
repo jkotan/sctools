@@ -24,7 +24,7 @@ import sys
 import simplejson as json
 import argparse
 # import argcomplete
-import pprint
+# import pprint
 import uuid
 
 {
@@ -127,6 +127,7 @@ class Loader(object):
         :type options: :class:`argparse.Namespace`
         """
         self.__output = options.output
+        self.__pid = options.pid
         dct = {}
         if options.beamtimemeta:
             with open(options.beamtimemeta, "r") as fl:
@@ -138,7 +139,7 @@ class Loader(object):
         if options.scientificmeta:
             with open(options.scientificmeta, "r") as fl:
                 jstr = fl.read()
-                print(jstr)
+                # print(jstr)
                 try:
                     dct = json.loads(jstr)
                 except Exception:
@@ -146,7 +147,10 @@ class Loader(object):
                         nan = float('nan')    # noqa: F841
                         dct = eval(jstr)
                         # mdflatten(dstr, [], dct)
-        self.__scmeta = dct
+        if 'scientificMetadata' in dct.keys():
+            self.__scmeta = dct['scientificMetadata']
+        else:
+            self.__scmeta = dct
         # print("BEAMTIME:", self.__btmeta)
         # print("OUTPUT:", self.__output)
         self.__metadata = {}
@@ -180,13 +184,12 @@ class Loader(object):
         if self.__btmeta:
             self.__metadata["scientificMetadata"]["beamtimeId"] = \
                 self.__btmeta["beamtimeId"]
-        if options.pid:
-            self.__metadata["pid"] = options.pid
+        if self.__pid:
+            self.__metadata["pid"] = self.__
         elif "pid" not in self.__metadata.keys():
             self.__metadata["pid"] = str(uuid.uuid4())
-        pp = pprint.PrettyPrinter()
-        pp.pprint(self.__metadata)
         # print(self.__metadata)
+        print(json.dumps(self.__metadata, sort_keys=True, indent=4))
         if self.__output:
             with open(self.__output, "w") as fl:
                 # jstr = fl.read()
