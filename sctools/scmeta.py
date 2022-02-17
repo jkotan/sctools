@@ -185,7 +185,7 @@ class Loader(object):
             self.__metadata["scientificMetadata"]["beamtimeId"] = \
                 self.__btmeta["beamtimeId"]
         if self.__pid:
-            self.__metadata["pid"] = self.__
+            self.__metadata["pid"] = self.__pid
         elif "pid" not in self.__metadata.keys():
             self.__metadata["pid"] = str(uuid.uuid4())
         # print(self.__metadata)
